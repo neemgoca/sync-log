@@ -55,6 +55,13 @@ def consultar(centro, servicio):
     return {"periodos": periodos, "huecos": sorted(set(huecos)), "ultimo_dia": ultimo}
 
 
+def para_reservar(huecos):
+    if not huecos:
+        return ""
+    lista = "\n".join(f"- {h}" for h in huecos[:15]) + (f"\n- … y {len(huecos) - 15} más" if len(huecos) > 15 else "")
+    return f"\n\nHuecos libres:\n{lista}\n\nPara reservar, escribe en Claude: `reserva {huecos[0]}` (o la fecha y hora que prefieras)."
+
+
 def append(path, header, rows):
     nuevo = not os.path.exists(path)
     with open(path, "a", newline="", encoding="utf-8") as f:
@@ -97,7 +104,7 @@ def main():
                                f"- Antes: {'; '.join(prev['periodos']) or '(nada)'}\n"
                                f"- Ahora: {'; '.join(snap['periodos']) or '(nada)'}\n"
                                f"- Huecos libres ahora: {len(snap['huecos'])}"
-                               + (f" (primero: {snap['huecos'][0]})" if snap["huecos"] else ""))
+                               + para_reservar(snap["huecos"]))
             abiertos = sorted(set(snap["huecos"]) - set(prev["huecos"]))
             tomados = sorted(set(prev["huecos"]) - set(snap["huecos"]))
             for h in abiertos:
@@ -105,7 +112,7 @@ def main():
             for h in tomados:
                 eventos.append([ts_utc, ts_mad, dia_sem, etiqueta, "hueco_tomado_o_vencido", h, ""])
             if ALERTAR_HUECOS and abiertos:
-                alertas.append(f"**{etiqueta}**: {len(abiertos)} hueco(s) nuevo(s) ({ts_mad}): " + ", ".join(abiertos[:20]))
+                alertas.append(f"**{etiqueta}**: {len(abiertos)} hueco(s) nuevo(s) ({ts_mad})." + para_reservar(abiertos))
         state[key] = snap
 
     append(os.path.join(DATA, "checks.csv"),
