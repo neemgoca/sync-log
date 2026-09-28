@@ -18,10 +18,10 @@ from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 
 # Configuración por secrets: API_BASE y OBJETIVOS ("centro:servicio,centro:servicio")
-API = os.environ["API_BASE"].rstrip("/")
+API = os.environ.get("API_BASE", "").rstrip("/")
 OBJETIVOS = [
     (int(c), int(s), chr(65 + i))
-    for i, (c, s) in enumerate(x.split(":") for x in os.environ["OBJETIVOS"].split(","))
+    for i, (c, s) in enumerate(x.split(":") for x in os.environ.get("OBJETIVOS", "").split(",") if x)
 ]
 ALERTAR_HUECOS = os.environ.get("ALERTAR_HUECOS", "false").lower() == "true"
 DATA = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
@@ -65,6 +65,9 @@ def append(path, header, rows):
 
 
 def main():
+    if not API or not OBJETIVOS:
+        print("Sin configuración (faltan secrets API_BASE / OBJETIVOS); no se consulta nada.")
+        return 0
     os.makedirs(DATA, exist_ok=True)
     state_path = os.path.join(DATA, "state.json")
     state = json.load(open(state_path, encoding="utf-8")) if os.path.exists(state_path) else {}
