@@ -1,0 +1,50 @@
+name: sync
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"   # GitHub suele retrasar los cron; en la práctica ~cada 10-20 min
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: sync
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Consultar
+        env:
+          API_BASE: ${{ secrets.API_BASE }}
+          OBJETIVOS: ${{ secrets.OBJETIVOS }}
+          ALERTAR_HUECOS: ${{ vars.ALERTAR_HUECOS || 'false' }}
+        run: python monitor.py
+
+      - name: Abrir issue si hay aviso
+        if: hashFiles('data/alerta.md') != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue create --title "Cambio detectado ($(TZ=Europe/Madrid date '+%d/%m %H:%M'))" --body-file data/alerta.md
+          rm data/alerta.md
+
+      - name: Guardar registro
+        run: |
+          git config user.name "sync-bot"
+          git config user.email "sync-bot@users.noreply.github.com"
+          git add data
+          git diff --cached --quiet && exit 0
+          git commit -m "check $(date -u '+%Y-%m-%d %H:%M')"
+          for i in 1 2 3; do git pull --rebase -q && git push -q && exit 0; sleep 5; done
+          exit 1
