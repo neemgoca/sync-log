@@ -2,7 +2,7 @@ name: sync
 
 on:
   schedule:
-    - cron: "7,17,27,37,47,57 * * * *"   # minutos desfasados: GitHub descarta más runs en :00; en la práctica ~cada 10-20 min
+    - cron: "7,17,27,37,47,57 * * * *"   # minutos desfasado: GitHub descarta más runs en :00; en la práctica ~cada 10-20 min
   workflow_dispatch:
 
 permissions:
