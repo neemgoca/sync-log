@@ -19,6 +19,8 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: main   # no el commit del disparo: un run en cola debe partir del state.json que dejó el anterior
 
       - uses: actions/setup-python@v5
         with:
