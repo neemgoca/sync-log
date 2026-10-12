@@ -27,6 +27,7 @@ ALERTAR_HUECOS = os.environ.get("ALERTAR_HUECOS", "false").lower() == "true"
 DATA = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
 MADRID = ZoneInfo("Europe/Madrid")
 DIAS_SEMANA = {1: "lun", 2: "mar", 4: "mié", 8: "jue", 16: "vie", 32: "sáb", 64: "dom"}
+ERRORES_PARA_AVISAR = 6  # consultas fallidas seguidas (~1 h) antes de abrir un issue
 
 
 def get_json(url):
@@ -41,6 +42,8 @@ def mascara(d):
 
 def consultar(centro, servicio):
     cal = get_json(f"{API}/disponible/centro/{centro}/servicio/{servicio}/calendario")
+    if not isinstance(cal, dict):
+        raise ValueError(f"la respuesta no es un objeto JSON ({type(cal).__name__})")
     periodos = sorted(
         f"{p['fecha_inicial']}→{p['fecha_final']} ({mascara(p['dias'])})" for p in cal.get("periodos", [])
     )
@@ -52,7 +55,8 @@ def consultar(centro, servicio):
             for s in get_json(f"{API}/disponible/horas/centro/{centro}/servicio/{servicio}/fecha/{f}"):
                 huecos.append(f"{d['dia']} {s['hora_cita'][:5]}")
     ultimo = cal["dias"][-1]["dia"] if cal.get("dias") else ""
-    return {"periodos": periodos, "huecos": sorted(set(huecos)), "ultimo_dia": ultimo}
+    # Las claves de la respuesta: si cambian, "vacío" puede ser que ya no sepamos leerla.
+    return {"periodos": periodos, "huecos": sorted(set(huecos)), "ultimo_dia": ultimo, "claves": sorted(cal)}
 
 
 def para_reservar(huecos):
@@ -85,18 +89,37 @@ def main():
     dia_sem = ["lun", "mar", "mié", "jue", "vie", "sáb", "dom"][local.weekday()]
 
     checks, eventos, alertas = [], [], []
+    errores = state.setdefault("_errores", {})
     for centro, servicio, etiqueta in OBJETIVOS:
         key = f"{centro}-{servicio}"
         try:
             snap = consultar(centro, servicio)
-        except Exception as e:  # red caída, 500, etc.
+        except Exception as e:  # red caída, 500, respuesta rara, etc.
             checks.append([ts_utc, ts_mad, dia_sem, etiqueta, "error", "", "", str(e)[:200]])
+            err = errores.setdefault(key, {"seguidos": 0, "desde": ts_mad})
+            err["seguidos"] += 1
+            if err["seguidos"] == ERRORES_PARA_AVISAR:
+                alertas.append(f"**{etiqueta}**: el monitor no puede leer el calendario "
+                               f"({err['seguidos']} consultas fallidas seguidas desde {err['desde']}, hora de Madrid).\n\n"
+                               f"Último error: `{str(e)[:200]}`\n\n"
+                               f"Mientras siga así, no vas a recibir avisos de agenda nueva ni de huecos.")
             continue
+        err = errores.pop(key, None)
+        if err and err["seguidos"] >= ERRORES_PARA_AVISAR:
+            alertas.append(f"**{etiqueta}**: el monitor vuelve a leer el calendario ({ts_mad} hora de Madrid), "
+                           f"tras {err['seguidos']} consultas fallidas desde {err['desde']}.")
         prev = state.get(key)
         checks.append([ts_utc, ts_mad, dia_sem, etiqueta, "ok", len(snap["huecos"]), snap["ultimo_dia"], ""])
         if prev is None:
             eventos.append([ts_utc, ts_mad, dia_sem, etiqueta, "inicio", "", "; ".join(snap["periodos"]) + f" | huecos={len(snap['huecos'])}"])
         else:
+            if "claves" in prev and snap["claves"] != prev["claves"]:
+                eventos.append([ts_utc, ts_mad, dia_sem, etiqueta, "respuesta_cambiada", "",
+                                "ANTES: " + ",".join(prev["claves"]) + " | AHORA: " + ",".join(snap["claves"])])
+                alertas.append(f"**{etiqueta}**: la respuesta del calendario cambió de forma ({ts_mad} hora de Madrid). "
+                               f"Puede que el monitor ya no la lea bien y que \"sin agenda\" no sea cierto.\n\n"
+                               f"- Antes: {', '.join(prev['claves']) or '(nada)'}\n"
+                               f"- Ahora: {', '.join(snap['claves']) or '(nada)'}")
             if snap["periodos"] != prev["periodos"]:
                 eventos.append([ts_utc, ts_mad, dia_sem, etiqueta, "agenda_cambiada", "",
                                 "ANTES: " + "; ".join(prev["periodos"]) + " | AHORA: " + "; ".join(snap["periodos"])])
