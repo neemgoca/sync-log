@@ -2,6 +2,11 @@
  "69-308": {
   "periodos": [],
   "huecos": [],
-  "ultimo_dia": ""
- }
+  "ultimo_dia": "",
+  "claves": [
+   "dias",
+   "periodos"
+  ]
+ },
+ "_errores": {}
 }
