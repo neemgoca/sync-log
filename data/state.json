@@ -1,8 +1,10 @@
 {
  "69-308": {
-  "periodos": [],
+  "periodos": [
+   "2025-10-17→2026-10-25 (mié)"
+  ],
   "huecos": [],
-  "ultimo_dia": "",
+  "ultimo_dia": "2026-10-25",
   "claves": [
    "dias",
    "periodos"
