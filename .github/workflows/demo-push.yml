@@ -1,4 +1,4 @@
-# Temporal: manda al celular un ejemplo de aviso de hueco con el mismo formato que el monitor (reenviado para el segundo celular).
+# Temporal: diagnostica el envío al celular (no imprime el canal) y manda el ejemplo de aviso de hueco.
 name: demo-push
 on:
   push:
@@ -11,15 +11,27 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Mandar ejemplo
+      - name: Diagnosticar y mandar ejemplo
         env:
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
         run: |
           python - <<'PY'
+          import hashlib, json, os, re, urllib.request
           from datetime import datetime
           import monitor
+          t = os.environ.get("NTFY_TOPIC", "")
+          print("largo:", len(t), "| formato synclog:", bool(re.fullmatch(r"synclog-[0-9a-f]{20}", t.strip())),
+                "| igual al original:", hashlib.sha256(t.strip().encode()).hexdigest() == "b54916b0aabd75edc13560925619c9b445de5be99af3916d674a411f3fe30779",
+                "| espacios o saltos:", t != t.strip())
           ts = datetime.now(monitor.MADRID).strftime("%Y-%m-%d %H:%M")
           huecos = ["2026-10-28 09:30", "2026-10-28 09:45"]
-          texto = f"**A**: {len(huecos)} hueco(s) nuevo(s) ({ts})." + monitor.para_reservar(huecos)
-          monitor.push("Hueco libre (EJEMPLO, no es real)", texto, 5)
+          texto = f"A: {len(huecos)} hueco(s) nuevo(s) ({ts})." + monitor.para_reservar(huecos).replace("`", "")
+          body = {"topic": t.strip(), "title": "Hueco libre (EJEMPLO, no es real)", "message": texto, "priority": 5, "tags": ["calendar"]}
+          req = urllib.request.Request("https://ntfy.sh/", data=json.dumps(body).encode(), headers={"Content-Type": "application/json"})
+          with urllib.request.urlopen(req, timeout=15) as r:
+              print("envío: HTTP", r.status, "| id", json.loads(r.read()).get("id"))
+          with urllib.request.urlopen(f"https://ntfy.sh/{t.strip()}/json?poll=1&since=3h", timeout=15) as r:
+              for linea in r.read().decode().splitlines():
+                  m = json.loads(linea)
+                  print("en el servidor:", datetime.fromtimestamp(m["time"], monitor.MADRID).strftime("%H:%M:%S"), "|", m.get("title"), "| prioridad", m.get("priority", 3))
           PY
