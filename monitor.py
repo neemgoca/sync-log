@@ -28,6 +28,10 @@ DATA = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
 MADRID = ZoneInfo("Europe/Madrid")
 DIAS_SEMANA = {1: "lun", 2: "mar", 4: "mié", 8: "jue", 16: "vie", 32: "sáb", 64: "dom"}
 ERRORES_PARA_AVISAR = 6  # consultas fallidas seguidas (~1 h) antes de abrir un issue
+# Push al celular con la app ntfy: el topic va como secret porque quien lo sepa puede leer los avisos.
+NTFY_TOPIC = os.environ.get("NTFY_TOPIC", "").strip()
+NTFY_URL = os.environ.get("NTFY_URL", "https://ntfy.sh/")
+PROBAR_PUSH = os.environ.get("PROBAR_PUSH", "false").lower() == "true"
 
 
 def get_json(url):
@@ -59,6 +63,19 @@ def consultar(centro, servicio):
     return {"periodos": periodos, "huecos": sorted(set(huecos)), "ultimo_dia": ultimo, "claves": sorted(cal)}
 
 
+def push(titulo, texto, prioridad):
+    if not NTFY_TOPIC:
+        return
+    body = {"topic": NTFY_TOPIC, "title": titulo, "message": texto.replace("**", "").replace("`", ""),
+            "priority": prioridad, "tags": ["calendar"]}
+    req = urllib.request.Request(NTFY_URL, data=json.dumps(body).encode("utf-8"),
+                                 headers={"Content-Type": "application/json"})
+    try:
+        urllib.request.urlopen(req, timeout=15).read()
+    except Exception as e:  # el issue sigue siendo el aviso de respaldo
+        print(f"No se pudo enviar el push: {e}", file=sys.stderr)
+
+
 def para_reservar(huecos):
     if not huecos:
         return ""
@@ -88,7 +105,15 @@ def main():
     ts_mad = local.strftime("%Y-%m-%d %H:%M")
     dia_sem = ["lun", "mar", "mié", "jue", "vie", "sáb", "dom"][local.weekday()]
 
-    checks, eventos, alertas = [], [], []
+    checks, eventos, alertas, pushes = [], [], [], []
+
+    def avisar(texto, titulo="Aviso del monitor", prioridad=4, issue=True):
+        if issue:
+            alertas.append(texto)
+        pushes.append((titulo, texto, prioridad))
+
+    if PROBAR_PUSH:
+        avisar("Prueba: si ves esto, los avisos del monitor te llegan al celular.", "Prueba del monitor", 3, issue=False)
     errores = state.setdefault("_errores", {})
     for centro, servicio, etiqueta in OBJETIVOS:
         key = f"{centro}-{servicio}"
@@ -99,15 +124,15 @@ def main():
             err = errores.setdefault(key, {"seguidos": 0, "desde": ts_mad})
             err["seguidos"] += 1
             if err["seguidos"] == ERRORES_PARA_AVISAR:
-                alertas.append(f"**{etiqueta}**: el monitor no puede leer el calendario "
-                               f"({err['seguidos']} consultas fallidas seguidas desde {err['desde']}, hora de Madrid).\n\n"
-                               f"Último error: `{str(e)[:200]}`\n\n"
-                               f"Mientras siga así, no vas a recibir avisos de agenda nueva ni de huecos.")
+                avisar(f"**{etiqueta}**: el monitor no puede leer el calendario "
+                       f"({err['seguidos']} consultas fallidas seguidas desde {err['desde']}, hora de Madrid).\n\n"
+                       f"Último error: `{str(e)[:200]}`\n\n"
+                       f"Mientras siga así, no vas a recibir avisos de agenda nueva ni de huecos.")
             continue
         err = errores.pop(key, None)
         if err and err["seguidos"] >= ERRORES_PARA_AVISAR:
-            alertas.append(f"**{etiqueta}**: el monitor vuelve a leer el calendario ({ts_mad} hora de Madrid), "
-                           f"tras {err['seguidos']} consultas fallidas desde {err['desde']}.")
+            avisar(f"**{etiqueta}**: el monitor vuelve a leer el calendario ({ts_mad} hora de Madrid), "
+                   f"tras {err['seguidos']} consultas fallidas desde {err['desde']}.")
         prev = state.get(key)
         checks.append([ts_utc, ts_mad, dia_sem, etiqueta, "ok", len(snap["huecos"]), snap["ultimo_dia"], ""])
         if prev is None:
@@ -116,26 +141,27 @@ def main():
             if "claves" in prev and snap["claves"] != prev["claves"]:
                 eventos.append([ts_utc, ts_mad, dia_sem, etiqueta, "respuesta_cambiada", "",
                                 "ANTES: " + ",".join(prev["claves"]) + " | AHORA: " + ",".join(snap["claves"])])
-                alertas.append(f"**{etiqueta}**: la respuesta del calendario cambió de forma ({ts_mad} hora de Madrid). "
-                               f"Puede que el monitor ya no la lea bien y que \"sin agenda\" no sea cierto.\n\n"
-                               f"- Antes: {', '.join(prev['claves']) or '(nada)'}\n"
-                               f"- Ahora: {', '.join(snap['claves']) or '(nada)'}")
+                avisar(f"**{etiqueta}**: la respuesta del calendario cambió de forma ({ts_mad} hora de Madrid). "
+                       f"Puede que el monitor ya no la lea bien y que \"sin agenda\" no sea cierto.\n\n"
+                       f"- Antes: {', '.join(prev['claves']) or '(nada)'}\n"
+                       f"- Ahora: {', '.join(snap['claves']) or '(nada)'}")
             if snap["periodos"] != prev["periodos"]:
                 eventos.append([ts_utc, ts_mad, dia_sem, etiqueta, "agenda_cambiada", "",
                                 "ANTES: " + "; ".join(prev["periodos"]) + " | AHORA: " + "; ".join(snap["periodos"])])
-                alertas.append(f"**{etiqueta}**: cambió el calendario cargado ({ts_mad} hora de Madrid).\n\n"
-                               f"- Antes: {'; '.join(prev['periodos']) or '(nada)'}\n"
-                               f"- Ahora: {'; '.join(snap['periodos']) or '(nada)'}\n"
-                               f"- Huecos libres ahora: {len(snap['huecos'])}"
-                               + para_reservar(snap["huecos"]))
+                avisar(f"**{etiqueta}**: cambió el calendario cargado ({ts_mad} hora de Madrid).\n\n"
+                       f"- Antes: {'; '.join(prev['periodos']) or '(nada)'}\n"
+                       f"- Ahora: {'; '.join(snap['periodos']) or '(nada)'}\n"
+                       f"- Huecos libres ahora: {len(snap['huecos'])}"
+                       + para_reservar(snap["huecos"]), "Cambió la agenda")
             abiertos = sorted(set(snap["huecos"]) - set(prev["huecos"]))
             tomados = sorted(set(prev["huecos"]) - set(snap["huecos"]))
             for h in abiertos:
                 eventos.append([ts_utc, ts_mad, dia_sem, etiqueta, "hueco_abierto", h, ""])
             for h in tomados:
                 eventos.append([ts_utc, ts_mad, dia_sem, etiqueta, "hueco_tomado_o_vencido", h, ""])
-            if ALERTAR_HUECOS and abiertos:
-                alertas.append(f"**{etiqueta}**: {len(abiertos)} hueco(s) nuevo(s) ({ts_mad})." + para_reservar(abiertos))
+            if abiertos:  # al celular siempre; issue solo con ALERTAR_HUECOS
+                avisar(f"**{etiqueta}**: {len(abiertos)} hueco(s) nuevo(s) ({ts_mad})." + para_reservar(abiertos),
+                       "Hueco libre", 5, issue=ALERTAR_HUECOS)
         state[key] = snap
 
     append(os.path.join(DATA, "checks.csv"),
@@ -144,6 +170,8 @@ def main():
         append(os.path.join(DATA, "eventos.csv"),
                ["utc", "madrid", "dia_semana", "objetivo", "evento", "hueco", "detalle"], eventos)
     json.dump(state, open(state_path, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+    for titulo, texto, prioridad in pushes:
+        push(titulo, texto, prioridad)
     if alertas:
         with open(os.path.join(DATA, "alerta.md"), "w", encoding="utf-8") as f:
             f.write("\n\n".join(alertas) + "\n")
