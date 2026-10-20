@@ -1,4 +1,4 @@
-# Temporal: manda al celular un ejemplo de aviso de hueco con el mismo formato que el monitor.
+# Temporal: manda al celular un ejemplo de aviso de hueco con el mismo formato que el monitor (reenviado para el segundo celular).
 name: demo-push
 on:
   push:
