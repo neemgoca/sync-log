@@ -32,6 +32,7 @@ ERRORES_PARA_AVISAR = 6  # consultas fallidas seguidas (~1 h) antes de abrir un 
 NTFY_TOPIC = os.environ.get("NTFY_TOPIC", "").strip()
 NTFY_URL = os.environ.get("NTFY_URL", "https://ntfy.sh/")
 PROBAR_PUSH = os.environ.get("PROBAR_PUSH", "false").lower() == "true"
+REPETIR_PUSH = "1m"  # ntfy reenvía cada aviso a este plazo, por si el primero no llega al celular
 
 
 def get_json(url):
@@ -68,12 +69,13 @@ def push(titulo, texto, prioridad):
         return
     body = {"topic": NTFY_TOPIC, "title": titulo, "message": texto.replace("**", "").replace("`", ""),
             "priority": prioridad, "tags": ["calendar"]}
-    req = urllib.request.Request(NTFY_URL, data=json.dumps(body).encode("utf-8"),
-                                 headers={"Content-Type": "application/json"})
-    try:
-        urllib.request.urlopen(req, timeout=15).read()
-    except Exception as e:  # el issue sigue siendo el aviso de respaldo
-        print(f"No se pudo enviar el push: {e}", file=sys.stderr)
+    for extra in ({}, {"title": f"{titulo} (repetido)", "delay": REPETIR_PUSH}):
+        req = urllib.request.Request(NTFY_URL, data=json.dumps(body | extra).encode("utf-8"),
+                                     headers={"Content-Type": "application/json"})
+        try:
+            urllib.request.urlopen(req, timeout=15).read()
+        except Exception as e:  # el issue sigue siendo el aviso de respaldo
+            print(f"No se pudo enviar el push: {e}", file=sys.stderr)
 
 
 def para_reservar(huecos):
