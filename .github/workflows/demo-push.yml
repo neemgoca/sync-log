@@ -1,0 +1,25 @@
+# Temporal: manda al celular un ejemplo de aviso de hueco con el mismo formato que el monitor.
+name: demo-push
+on:
+  push:
+    branches: [demo-push]
+jobs:
+  demo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Mandar ejemplo
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+        run: |
+          python - <<'PY'
+          from datetime import datetime
+          import monitor
+          ts = datetime.now(monitor.MADRID).strftime("%Y-%m-%d %H:%M")
+          huecos = ["2026-10-28 09:30", "2026-10-28 09:45"]
+          texto = f"**A**: {len(huecos)} hueco(s) nuevo(s) ({ts})." + monitor.para_reservar(huecos)
+          monitor.push("Hueco libre (EJEMPLO, no es real)", texto, 5)
+          PY
