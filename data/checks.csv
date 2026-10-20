@@ -3155,3 +3155,4 @@ utc,madrid,dia_semana,objetivo,resultado,huecos_libres,ultimo_dia_agenda,error
 2026-10-20 14:50,2026-10-20 16:50,mar,A,ok,0,2026-10-25,
 2026-10-20 15:01,2026-10-20 17:01,mar,A,ok,0,2026-10-25,
 2026-10-20 15:10,2026-10-20 17:10,mar,A,error,,,<urlopen error [Errno -3] Temporary failure in name resolution>
+2026-10-20 15:20,2026-10-20 17:20,mar,A,ok,0,2026-10-25,
