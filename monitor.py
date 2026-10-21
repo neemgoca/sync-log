@@ -175,8 +175,9 @@ def main():
     for titulo, texto, prioridad in pushes:
         push(titulo, texto, prioridad)
     if alertas:
-        with open(os.path.join(DATA, "alerta.md"), "w", encoding="utf-8") as f:
-            f.write("\n\n".join(alertas) + "\n")
+        # "a": en la ventana del viernes varias consultas seguidas comparten un solo issue al final
+        with open(os.path.join(DATA, "alerta.md"), "a", encoding="utf-8") as f:
+            f.write("\n\n".join(alertas) + "\n\n")
     print(json.dumps({"checks": checks, "eventos": eventos, "alertas": len(alertas)}, ensure_ascii=False))
 
 
