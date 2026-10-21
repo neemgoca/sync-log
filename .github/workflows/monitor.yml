@@ -10,7 +10,7 @@ on:
         type: boolean
         default: false
       ventana_minutos:
-        description: "Consultar cada 20 s durante estos minutos (para probar la ventana del viernes)"
+        description: "Consultar cada 15 s durante estos minutos (para probar la ventana del viernes)"
         type: number
         default: 0
 
@@ -46,11 +46,11 @@ jobs:
         run: |
           python monitor.py
           # Los viernes la oficina abre citas hacia las 14:00 (hora de Madrid) y duran minutos: el run que cae
-          # entre las 13:45 y las 14:20 se queda consultando cada 20 s hasta el final de esa franja.
+          # entre las 13:45 y las 14:20 se queda consultando cada 15 s hasta el final de esa franja.
           en_ventana() { h=$(TZ=Europe/Madrid date +%u%H%M); [ "$h" -ge 51345 ] && [ "$h" -lt 51420 ]; }
           fin=$(( $(date +%s) + VENTANA_MINUTOS * 60 ))
           while en_ventana || [ "$(date +%s)" -lt "$fin" ]; do
-            sleep 20
+            sleep 15
             PROBAR_PUSH=false python monitor.py
           done
 
