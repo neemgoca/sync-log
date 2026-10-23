@@ -2,3 +2,6 @@ utc,madrid,dia_semana,objetivo,evento,hueco,detalle
 2026-09-28 22:29,2026-09-29 00:29,mar,A,inicio,,2025-10-17→2026-10-04 (mié) | huecos=0
 2026-10-04 22:00,2026-10-05 00:00,lun,A,agenda_cambiada,,ANTES: 2025-10-17→2026-10-04 (mié) | AHORA: 
 2026-10-16 12:10,2026-10-16 14:10,vie,A,agenda_cambiada,,ANTES:  | AHORA: 2025-10-17→2026-10-25 (mié)
+2026-10-23 12:04,2026-10-23 14:04,vie,A,agenda_cambiada,,ANTES: 2025-10-17→2026-10-25 (mié) | AHORA: 2025-10-17→2026-11-01 (mié)
+2026-10-23 12:04,2026-10-23 14:04,vie,A,hueco_abierto,2026-10-28 11:00,
+2026-10-23 12:04,2026-10-23 14:04,vie,A,hueco_tomado_o_vencido,2026-10-28 11:00,
