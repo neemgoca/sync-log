@@ -3539,3 +3539,4 @@ utc,madrid,dia_semana,objetivo,resultado,huecos_libres,ultimo_dia_agenda,error
 2026-10-23 03:20,2026-10-23 05:20,vie,A,ok,0,2026-10-25,
 2026-10-23 03:30,2026-10-23 05:30,vie,A,error,,,HTTP Error 500: Error Interno del Servidor
 2026-10-23 03:40,2026-10-23 05:40,vie,A,error,,,HTTP Error 500: Error Interno del Servidor
+2026-10-23 03:50,2026-10-23 05:50,vie,A,error,,,HTTP Error 500: Error Interno del Servidor
