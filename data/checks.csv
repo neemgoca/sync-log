@@ -4631,3 +4631,4 @@ utc,madrid,dia_semana,objetivo,resultado,huecos_libres,ultimo_dia_agenda,error
 2026-10-29 21:10,2026-10-29 22:10,jue,A,ok,0,2026-11-01,
 2026-10-29 21:20,2026-10-29 22:20,jue,A,ok,0,2026-11-01,
 2026-10-29 21:30,2026-10-29 22:30,jue,A,error,,,<urlopen error _ssl.c:993: The handshake operation timed out>
+2026-10-29 21:40,2026-10-29 22:40,jue,A,ok,0,2026-11-01,
