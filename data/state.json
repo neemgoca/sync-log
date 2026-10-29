@@ -10,10 +10,5 @@
    "periodos"
   ]
  },
- "_errores": {
-  "69-308": {
-   "seguidos": 1,
-   "desde": "2026-10-29 04:20"
-  }
- }
+ "_errores": {}
 }
