@@ -4521,3 +4521,4 @@ utc,madrid,dia_semana,objetivo,resultado,huecos_libres,ultimo_dia_agenda,error
 2026-10-29 03:20,2026-10-29 04:20,jue,A,error,,,<urlopen error timed out>
 2026-10-29 03:30,2026-10-29 04:30,jue,A,ok,0,2026-11-01,
 2026-10-29 03:40,2026-10-29 04:40,jue,A,ok,0,2026-11-01,
+2026-10-29 03:50,2026-10-29 04:50,jue,A,ok,0,2026-11-01,
