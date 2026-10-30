@@ -153,7 +153,7 @@ def main():
                 avisar(f"**{etiqueta}**: cambió el calendario cargado ({ts_mad} hora de Madrid).\n\n"
                        f"- Antes: {'; '.join(prev['periodos']) or '(nada)'}\n"
                        f"- Ahora: {'; '.join(snap['periodos']) or '(nada)'}\n"
-                       f"- Huecos libres ahora: {len(snap['huecos'])}"
+                       + (f"- Huecos libres ahora: {len(snap['huecos'])}" if snap["huecos"] else "- Ya no hay cupos libres 😢")
                        + para_reservar(snap["huecos"]), "Cambió la agenda")
             abiertos = sorted(set(snap["huecos"]) - set(prev["huecos"]))
             tomados = sorted(set(prev["huecos"]) - set(snap["huecos"]))
