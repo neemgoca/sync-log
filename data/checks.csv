@@ -5030,3 +5030,4 @@ utc,madrid,dia_semana,objetivo,resultado,huecos_libres,ultimo_dia_agenda,error
 2026-11-01 01:01,2026-11-01 02:01,dom,A,ok,0,2026-11-08,
 2026-11-01 01:10,2026-11-01 02:10,dom,A,error,,,<urlopen error [Errno 111] Connection refused>
 2026-11-01 01:20,2026-11-01 02:20,dom,A,ok,0,2026-11-08,
+2026-11-01 01:29,2026-11-01 02:29,dom,A,ok,0,2026-11-08,
