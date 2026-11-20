@@ -8,3 +8,6 @@ utc,madrid,dia_semana,objetivo,evento,hueco,detalle
 2026-10-30 13:00,2026-10-30 14:00,vie,A,agenda_cambiada,,ANTES: 2025-10-17→2026-11-01 (mié) | AHORA: 2025-10-17→2026-11-08 (mié)
 2026-11-06 13:01,2026-11-06 14:01,vie,A,agenda_cambiada,,ANTES: 2025-10-17→2026-11-08 (mié) | AHORA: 2025-10-17→2026-11-15 (mié)
 2026-11-13 13:00,2026-11-13 14:00,vie,A,agenda_cambiada,,ANTES: 2025-10-17→2026-11-15 (mié) | AHORA: 2025-10-17→2026-11-22 (mié)
+2026-11-20 13:01,2026-11-20 14:01,vie,A,agenda_cambiada,,ANTES: 2025-10-17→2026-11-22 (mié) | AHORA: 2025-10-17→2026-11-29 (mié)
+2026-11-20 13:03,2026-11-20 14:03,vie,A,hueco_abierto,2026-11-25 11:30,
+2026-11-20 13:04,2026-11-20 14:04,vie,A,hueco_tomado_o_vencido,2026-11-25 11:30,
